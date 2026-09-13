@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Token Refresher</title>
+    <style>
+        :root {
+            --bg-color: #0b0a05;
+            --card-bg: rgba(22, 19, 10, 0.75);
+            --border-color: rgba(255, 215, 0, 0.2);
+            --accent-glow: rgba(255, 215, 0, 0.4);
+            --accent-color: #ffd700;
+            --accent-hover: #e6b800;
+            --accent-secondary: #ffaa00;
+            --text-main: #fcf8e3;
+            --text-muted: #a39b78;
+            --success: #ffd700;
+            --warning: #ffaa00;
+            --danger: #ff4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(255, 215, 0, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(255, 170, 0, 0.1) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), 0 20px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        header {
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.5px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.active {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        textarea {
+            width: 100%;
+            background: rgba(10, 8, 3, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            color: #fff;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.88rem;
+            transition: all 0.2s ease;
+            resize: vertical;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        /* Lifetime Dynamic Progress Bar Card */
+        .lifetime-card {
+            background: rgba(10, 8, 3, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.05);
+        }
+
+        .lifetime-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .lifetime-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lifetime-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            color: var(--accent-color);
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 215, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--accent-color);
+            border-radius: 10px;
+            transition: width 0.4s ease, background-color 0.4s ease;
+            box-shadow: 0 0 12px var(--accent-color);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: #fff;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+            background-color: #0b0a05;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary));
+            color: #0b0a05;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 22px rgba(255, 215, 0, 0.5);
+        }
+
+        button:disabled {
+            background: var(--border-color);
+            color: var(--text-muted);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: rgba(10, 8, 3, 0.4);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 10px;
+        }
+
+        .metric-card .title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-card .value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            border-radius: 6px;
+            box-shadow: none;
+            font-weight: 600;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 215, 0, 0.15);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            transform: none;
+        }
+
+        pre {
+            background: rgba(10, 8, 3, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            max-height: 250px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 0.85rem;
+            color: #ffea79;
+            white-space: pre-wrap;
+            word-break: break-all;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .log {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        .log.error { color: var(--danger); }
+        .log.success { color: var(--accent-color); text-shadow: 0 0 8px rgba(255, 215, 0, 0.4); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>⚡ Stellar Refresher</h1>
+        <span id="status-badge" class="status-badge">Idle</span>
+    </header>
+
+    <div class="form-group">
+        <label for="refresh-token-input">Refresh Token / Bearer Token</label>
+        <textarea id="refresh-token-input" rows="3" placeholder="Paste your refresh token or JWT bearer token here..."></textarea>
+    </div>
+
+    <!-- Live Dynamic Lifetime Progress Bar -->
+    <div class="lifetime-card">
+        <div class="lifetime-header">
+            <span class="lifetime-title">Token Lifetime Remaining</span>
+            <span id="lifetime-display" class="lifetime-value">-- : -- : --</span>
+        </div>
+        <div class="progress-track">
+            <div id="lifetime-progress" class="progress-bar"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label class="toggle-wrapper">
+            <div class="switch">
+                <input type="checkbox" id="auto-refresh-toggle">
+                <span class="slider"></span>
+            </div>
+            <span>Auto Refresh (at &le;2 mins left)</span>
+        </label>
+
+        <div class="btn-group">
+            <button id="refresh-btn" onclick="executeTokenRefresh()">Refresh Token</button>
+        </div>
+    </div>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="title">Expiration Timestamp</div>
+            <div class="value" id="expiration-display">N/A</div>
+        </div>
+        <div class="metric-card">
+            <div class="title">Active Route</div>
+            <div class="value" id="active-route-display">None</div>
+        </div>
+        <div class="metric-card">
+            <div class="title">Output Lifetime</div>
+            <div class="value" id="output-lifetime-display">N/A</div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="output-header">
+            <label>JSON Response Payload</label>
+            <div class="action-btns">
+                <button class="action-btn" onclick="copyResponse()">Copy JSON</button>
+                <button class="action-btn" onclick="downloadResponse()">Download JSON</button>
+            </div>
+        </div>
+        <pre id="json-output">// Response payload will output here...</pre>
+    </div>
+
+    <div id="status-log" class="log"></div>
+</div>
+
+<script>
+    const BASE_URL = "https://stellarapi-backend-production.up.railway.app";
+    const ENDPOINTS = [
+        "/auth/refresh",
+        "/v1/auth/refresh",
+        "/refresh",
+        "/token/refresh"
+    ];
+
+    let timerInterval = null;
+    let currentBearerToken = null;
+    let tokenTotalDuration = 0;
+    let currentPayloadObj = null;
+    let isRefreshing = false;
+
+    // Decode JWT payload
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            if (!base64Url) return null;
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Start countdown timer and check for auto-refresh at the 2-minute mark
+    function startLifetimeTracker(expTimestamp, iatTimestamp) {
+        clearInterval(timerInterval);
+
+        const nowInitial = Math.floor(Date.now() / 1000);
+        
+        if (iatTimestamp && expTimestamp > iatTimestamp) {
+            tokenTotalDuration = expTimestamp - iatTimestamp;
+        } else {
+            tokenTotalDuration = Math.max(expTimestamp - nowInitial, 3600);
+        }
+
+        function updateTimer() {
+            const now = Math.floor(Date.now() / 1000);
+            const remaining = expTimestamp - now;
+            const progressBar = document.getElementById('lifetime-progress');
+            const display = document.getElementById('lifetime-display');
+            const autoRefreshEnabled = document.getElementById('auto-refresh-toggle').checked;
+
+            // Trigger auto-refresh when <= 120 seconds (2 mins) remaining
+            if (autoRefreshEnabled && remaining <= 120 && !isRefreshing) {
+                const log = document.getElementById('status-log');
+                log.innerText = "Auto Refresh Triggered (2 minutes or less remaining)...";
+                executeTokenRefresh();
+            }
+
+            if (remaining <= 0) {
+                display.innerText = "EXPIRED";
+                display.style.color = "var(--danger)";
+                progressBar.style.width = "0%";
+                progressBar.style.backgroundColor = "var(--danger)";
+                clearInterval(timerInterval);
+                return;
+            }
+
+            const percentage = Math.min(Math.max((remaining / tokenTotalDuration) * 100, 0), 100);
+            progressBar.style.width = `${percentage}%`;
+
+            if (percentage > 40) {
+                progressBar.style.backgroundColor = "var(--accent-color)";
+                display.style.color = "var(--accent-color)";
+            } else if (percentage > 15) {
+                progressBar.style.backgroundColor = "var(--warning)";
+                display.style.color = "var(--warning)";
+            } else {
+                progressBar.style.backgroundColor = "var(--danger)";
+                display.style.color = "var(--danger)";
+            }
+
+            const hrs = String(Math.floor(remaining / 3600)).padStart(2, '0');
+            const mins = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
+            const secs = String(remaining % 60).padStart(2, '0');
+            display.innerText = `${hrs}:${mins}:${secs}`;
+        }
+
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    // Process input realtime
+    document.getElementById('refresh-token-input').addEventListener('input', function(e) {
+        const inputVal = e.target.value.trim();
+        const jwtPayload = parseJwt(inputVal);
+
+        if (jwtPayload && jwtPayload.exp) {
+            const expDate = new Date(jwtPayload.exp * 1000);
+            document.getElementById('expiration-display').innerText = expDate.toLocaleTimeString();
+            startLifetimeTracker(jwtPayload.exp, jwtPayload.iat);
+        }
+    });
+
+    // Execute Token Refresh logic across fallback routes
+    async function executeTokenRefresh() {
+        if (isRefreshing) return;
+        isRefreshing = true;
+
+        const refreshTokenInput = document.getElementById('refresh-token-input').value.trim();
+        const log = document.getElementById('status-log');
+        const badge = document.getElementById('status-badge');
+        const btn = document.getElementById('refresh-btn');
+
+        if (!refreshTokenInput) {
+            log.innerText = "Error: Please enter a refresh token.";
+            log.className = "log error";
+            isRefreshing = false;
+            return;
+        }
+
+        btn.disabled = true;
+        badge.innerText = "Refreshing...";
+        badge.className = "status-badge active";
+        log.innerText = "Connecting to backend authentication service...";
+        log.className = "log";
+
+        let successPayload = null;
+        let successfulRoute = "";
+
+        const headers = { "Content-Type": "application/json" };
+        if (currentBearerToken) {
+            headers["Authorization"] = `Bearer ${currentBearerToken}`;
+        }
+
+        for (const route of ENDPOINTS) {
+            try {
+                log.innerText = `Trying fallback route: ${route}`;
+                const response = await fetch(`${BASE_URL}${route}`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify({ refresh_token: refreshTokenInput })
+                });
+
+                if (response.ok) {
+                    successPayload = await response.json();
+                    successfulRoute = route;
+                    break;
+                }
+            } catch (err) {
+                // Continue attempting redundant routes
+            }
+        }
+
+        btn.disabled = false;
+        isRefreshing = false;
+
+        if (successPayload) {
+            log.innerText = `Success: Tokens updated via ${successfulRoute}`;
+            log.className = "log success";
+            badge.innerText = "Active";
+
+            currentPayloadObj = successPayload;
+            document.getElementById('json-output').innerText = JSON.stringify(successPayload, null, 2);
+            document.getElementById('active-route-display').innerText = successfulRoute;
+
+            // SWAP TOKEN: Update input textarea with the new refresh token
+            if (successPayload.refresh_token) {
+                document.getElementById('refresh-token-input').value = successPayload.refresh_token;
+            }
+
+            if (successPayload.bearer) {
+                currentBearerToken = successPayload.bearer;
+                const payload = parseJwt(successPayload.bearer);
+                
+                if (payload && payload.exp) {
+                    const expDate = new Date(payload.exp * 1000);
+                    document.getElementById('expiration-display').innerText = expDate.toLocaleTimeString();
+
+                    if (payload.iat) {
+                        const totalSecs = payload.exp - payload.iat;
+                        const hrs = Math.floor(totalSecs / 3600);
+                        const mins = Math.floor((totalSecs % 3600) / 60);
+                        document.getElementById('output-lifetime-display').innerText = `${hrs}h ${mins}m (${totalSecs}s)`;
+                    } else {
+                        document.getElementById('output-lifetime-display').innerText = expDate.toLocaleTimeString();
+                    }
+
+                    startLifetimeTracker(payload.exp, payload.iat);
+                } else {
+                    document.getElementById('expiration-display').innerText = "No exp claim";
+                    document.getElementById('output-lifetime-display').innerText = "Unlimited";
+                    document.getElementById('lifetime-display').innerText = "Unlimited";
+                    document.getElementById('lifetime-progress').style.width = "100%";
+                }
+            }
+        } else {
+            log.innerText = "Error: Token refresh failed on all route fallbacks.";
+            log.className = "log error";
+            badge.innerText = "Failed";
+            badge.className = "status-badge";
+        }
+    }
+
+    // Enable auto-refresh check on toggle
+    document.getElementById('auto-refresh-toggle').addEventListener('change', function(e) {
+        if (e.target.checked) {
+            const log = document.getElementById('status-log');
+            log.innerText = "Auto Refresh enabled (Triggers when token lifetime <= 2 minutes).";
+            log.className = "log success";
+        }
+    });
+
+    // Copy JSON Utility
+    function copyResponse() {
+        const text = document.getElementById('json-output').innerText;
+        navigator.clipboard.writeText(text);
+        const log = document.getElementById('status-log');
+        log.innerText = "JSON output copied to clipboard!";
+        log.className = "log success";
+    }
+
+    // Download JSON Utility
+    function downloadResponse() {
+        if (!currentPayloadObj) {
+            const log = document.getElementById('status-log');
+            log.innerText = "Error: No response payload to download.";
+            log.className = "log error";
+            return;
+        }
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentPayloadObj, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `tokens_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        const log = document.getElementById('status-log');
+        log.innerText = "Response downloaded as JSON file!";
+        log.className = "log success";
+    }
+</script>
+
+</body>
+</html>
