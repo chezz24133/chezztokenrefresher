@@ -634,4 +634,110 @@
         for (const route of ENDPOINTS) {
             try {
                 log.innerText = `Trying fallback route: ${route}`;
-            
+                const response = await fetch(`${BASE_URL}${route}`, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify({ refresh_token: refreshTokenInput })
+                });
+
+                if (response.ok) {
+                    successPayload = await response.json();
+                    successfulRoute = route;
+                    break;
+                }
+            } catch (err) {
+                // Continue checking redundancy routes
+            }
+        }
+
+        btn.disabled = false;
+        isRefreshing = false;
+
+        if (successPayload) {
+            log.innerText = `Success: Tokens updated via ${successfulRoute}`;
+            log.className = "log success";
+            badge.innerText = "Active";
+
+            currentPayloadObj = successPayload;
+            document.getElementById('json-output').innerText = JSON.stringify(successPayload, null, 2);
+            document.getElementById('active-route-display').innerText = successfulRoute;
+
+            // SWAP TOKEN: Auto-update input textarea
+            if (successPayload.refresh_token) {
+                document.getElementById('refresh-token-input').value = successPayload.refresh_token;
+            }
+
+            if (successPayload.bearer) {
+                currentBearerToken = successPayload.bearer;
+                const payload = parseJwt(successPayload.bearer);
+                
+                if (payload && payload.exp) {
+                    const expDate = new Date(payload.exp * 1000);
+                    document.getElementById('expiration-display').innerText = expDate.toLocaleTimeString();
+
+                    if (payload.iat) {
+                        const totalSecs = payload.exp - payload.iat;
+                        const hrs = Math.floor(totalSecs / 3600);
+                        const mins = Math.floor((totalSecs % 3600) / 60);
+                        document.getElementById('output-lifetime-display').innerText = `${hrs}h ${mins}m (${totalSecs}s)`;
+                    } else {
+                        document.getElementById('output-lifetime-display').innerText = expDate.toLocaleTimeString();
+                    }
+
+                    startLifetimeTracker(payload.exp, payload.iat);
+                } else {
+                    document.getElementById('expiration-display').innerText = "No exp claim";
+                    document.getElementById('output-lifetime-display').innerText = "Unlimited";
+                    document.getElementById('lifetime-display').innerText = "Unlimited";
+                    document.getElementById('lifetime-progress').style.width = "100%";
+                }
+            }
+        } else {
+            log.innerText = "Error: Token refresh failed on all route fallbacks.";
+            log.className = "log error";
+            badge.innerText = "Failed";
+            badge.className = "status-badge";
+        }
+    }
+
+    document.getElementById('auto-refresh-toggle').addEventListener('change', function(e) {
+        if (e.target.checked) {
+            const log = document.getElementById('status-log');
+            log.innerText = "Auto Refresh enabled (Triggers when token lifetime <= 2 minutes).";
+            log.className = "log success";
+        }
+    });
+
+    function copyResponse() {
+        const text = document.getElementById('json-output').innerText;
+        navigator.clipboard.writeText(text);
+        const log = document.getElementById('status-log');
+        log.innerText = "JSON output copied to clipboard!";
+        log.className = "log success";
+    }
+
+    // Specific Download Name: token.json
+    function downloadResponse() {
+        if (!currentPayloadObj) {
+            const log = document.getElementById('status-log');
+            log.innerText = "Error: No response payload to download.";
+            log.className = "log error";
+            return;
+        }
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentPayloadObj, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "token.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        const log = document.getElementById('status-log');
+        log.innerText = "Response downloaded as token.json!";
+        log.className = "log success";
+    }
+</script>
+
+</body>
+</html>
